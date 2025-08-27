@@ -163,6 +163,41 @@ See [#49](https://github.com/Burnett01/rsync-deployments/issues/49) and [#24](ht
 
 ---
 
+### deploy changed files only with exclude option
+```
+name: DEPLOY
+on:
+  push:
+    branches:
+      - master
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Get Changed Files
+        id: changed-files
+        run: |
+          git diff --name-only HEAD^ |
+          grep -vEi '^\.github/|^\.git/|^readme\.md' > changed_files.txt || true
+          echo "files=$(cat changed_files.txt | tr '\n' ' ')" >> $GITHUB_OUTPUT
+
+      - name: Deploy Changed Files
+        uses: Burnett01/rsync-deployments@master
+        with:
+          switches: -avz --files-from=changed_files.txt
+          # path: /
+          remote_path: ${{ secrets.DEPLOY_PATH }}
+          remote_host: ${{ secrets.DEPLOY_HOST }}
+          remote_port: ${{ secrets.DEPLOY_PORT }}
+          remote_user: ${{ secrets.DEPLOY_USER }}
+          remote_key: ${{ secrets.DEPLOY_KEY }}
+```
+
 ## Version 7.0.0 & 7.0.1 (DEPRECATED)
 
 Check here: 
