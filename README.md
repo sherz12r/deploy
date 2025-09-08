@@ -165,37 +165,38 @@ See [#49](https://github.com/Burnett01/rsync-deployments/issues/49) and [#24](ht
 
 ### deploy changed files only with exclude option
 ```
-name: DEPLOY
+name: deploy
 on:
-  push:
-    branches:
-      - master
+    push:
+        branches:
+          - master
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+          - name: checkout code
+            uses: actions/checkout@v3
+            with:
+                fetch-depth: 0
+          - name: get changed files
+            id: changed-files
+            run: |
+              # Get only added (A), modified (M), or renamed (R) files
+              git diff --name-status HEAD^ | awk '$1 != "D" {print $2}' |
+              grep -vEi '^\.git/|^\.github/|\.editorconfig$|\.gitattributes$|\.styleci\.yml$|^CHANGELOG\.md$|^artisan$|^package\.json$|^phpunit\.xml$|^webpack\.mix\.js$|^\.env-example$|^\.gitignore$|^\.htaccess$|^composer\.json$|^composer\.lock$|^readme\.md$|^web\.config$|^storage/' > changed_files.txt || true
 
-      - name: Get Changed Files
-        id: changed-files
-        run: |
-          git diff --name-only HEAD^ |
-          grep -vEi '^\.github/|^\.git/|^readme\.md' > changed_files.txt || true
-          echo "files=$(cat changed_files.txt | tr '\n' ' ')" >> $GITHUB_OUTPUT
+              echo "files=$(cat changed_files.txt | tr '\n' ' ')" >> $GITHUB_OUTPUT
 
-      - name: Deploy Changed Files
-        uses: Burnett01/rsync-deployments@master
-        with:
-          switches: -avz --files-from=changed_files.txt
-          # path: /
-          remote_path: ${{ secrets.DEPLOY_PATH }}
-          remote_host: ${{ secrets.DEPLOY_HOST }}
-          remote_port: ${{ secrets.DEPLOY_PORT }}
-          remote_user: ${{ secrets.DEPLOY_USER }}
-          remote_key: ${{ secrets.DEPLOY_KEY }}
+          - name: deploy changed files only
+            uses: sherz12r/deploy@master
+            with:
+                switches: -avz --files-from=changed_files.txt
+                # path: /
+                remote_path: ${{ secrets.DEPLOY_PATH }}
+                remote_host: ${{ secrets.DEPLOY_HOST }}
+                remote_port: ${{ secrets.DEPLOY_PORT }}
+                remote_user: ${{ secrets.DEPLOY_USER }}
+                remote_key: ${{ secrets.DEPLOY_KEY }}
 ```
 
 ## Version 7.0.0 & 7.0.1 (DEPRECATED)
